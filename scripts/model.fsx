@@ -56,16 +56,16 @@ let hotFactorsSeries = hotFactorsSeriesTest |> List.filter (fun (f, t) -> t <= 0
 let hotFactorsNotSeries = hotFactorsNotSeriesTest |> List.filter (fun (f, t) -> t <= 0.02) |> List.map fst
 
 let lambda = 1.0
-let gamma = 1.0
-let minChildWeight = 3.0
+let gamma = 0.0
+let minChildWeight = 1.0
 let learnRate = 0.1
 
 //use train filter for validation
 let trainFilter = (new BoolCovariate(resp.Length, 0.0, 0.5)).AsExpr |> Some
 
-let xgSeries = ML.xgb resp (fun i -> hotFactorsSeries) (Some obsFilterSeries) None learnRate 40 lambda gamma minChildWeight (fun i -> Operators.min (i / 7 + 2) 6) 10000 4
+let xgSeries = ML.xgb resp (fun i -> hotFactorsSeries) (Some obsFilterSeries) None learnRate 10 lambda gamma minChildWeight (fun i -> 8) 10000 4
 
-let xgNotSeries = ML.xgb resp (fun i -> hotFactorsNotSeries) (Some obsFilterNotSeries) None learnRate 20 lambda gamma minChildWeight (fun i -> i / 10 + 1) 10000 4
+let xgNotSeries = ML.xgb resp (fun i -> hotFactorsNotSeries) (Some obsFilterNotSeries) None learnRate 15 lambda gamma minChildWeight (fun i -> 7) 10000 4
 
 
 
