@@ -9,6 +9,8 @@ open Xi.BasicStats
 open Xi.XiDataProvider
 
 #time
+//make sure zip files are in the same folder as this script or specify full paths
+//you have to use DataImport.importCsvAsync to create the zip files, they are NOT just zipped csv files
 type NumTrain = XiDataFrame< "train_numeric.zip" >
 let numTrain = new NumTrain()
 
@@ -29,11 +31,8 @@ let magicTest = new MagicTest()
 
 let resp = (numTrain.Response |>> float)
 
-let numTrainFactors = numTrain.DataFrame.Factors |> List.filter (fun f -> f <> numTrain.Response)
-
-let searchNumFactors = numTrainFactors |> List.map (fun x -> x.AsExpr)
-
-let searchCatFactors = catTrain.DataFrame.Factors |> List.filter (fun f -> f.Cardinality > 1) |> List.map (fun x -> x.AsExpr)
+let numFactors = numTrain.DataFrame.Factors |> List.filter (fun f -> f <> numTrain.Response) |> List.map (fun x -> x.AsExpr)
+let catFactors = catTrain.DataFrame.Factors |> List.filter (fun f -> f.Cardinality > 1) |> List.map (fun x -> x.AsExpr)
 
 let magicCovs = magicTrain.DataFrame.Covariates |> List.map (fun c -> Cut(c.AsExpr, use c = !!c in Vector.Unique c))
                                                 |> List.filter (fun f -> f.Cardinality > 1)
@@ -44,11 +43,11 @@ let magicFactors = magicTrain.DataFrame.Factors |> List.filter (fun f -> f.Cardi
 let obsFilterSeries = magicTrain.SeriesLen .> 1.0
 let obsFilterNotSeries = magicTrain.SeriesLen .= 1.0
 
-let hotFactorsSeriesTest = (magicCovs @ magicFactors @  searchNumFactors  @ searchCatFactors) |> List.map (fun f -> f.AsOneHots()) |> List.concat
+let hotFactorsSeriesTest = (magicCovs @ magicFactors @  numFactors  @ catFactors) |> List.map (fun f -> f.AsOneHots()) |> List.concat
                                |> List.map (fun f -> f, fisherExactTest f numTrain.Response.AsExpr (Some obsFilterSeries) 10000 4)
                                |> List.sortBy snd
 
-let hotFactorsNotSeriesTest = (magicCovs @ magicFactors @  searchNumFactors  @ searchCatFactors) |> List.map (fun f -> f.AsOneHots()) |> List.concat
+let hotFactorsNotSeriesTest = (magicCovs @ magicFactors @  numFactors  @ catFactors) |> List.map (fun f -> f.AsOneHots()) |> List.concat
                                   |> List.map (fun f -> f, fisherExactTest f numTrain.Response.AsExpr (Some obsFilterNotSeries) 10000 4)
                                   |> List.sortBy snd
 
@@ -63,9 +62,9 @@ let learnRate = 0.1
 //use train filter for validation
 let trainFilter = (new BoolCovariate(resp.Length, 0.0, 0.5)).AsExpr |> Some
 
-let xgSeries = ML.xgb resp (fun i -> hotFactorsSeries) (Some obsFilterSeries) None learnRate 10 lambda gamma minChildWeight (fun i -> 8) 10000 4
+let xgSeries = ML.xgb resp None (fun i -> hotFactorsSeries) (Some obsFilterSeries) None learnRate 10 lambda gamma minChildWeight (fun i -> 8) 10000 4
 
-let xgNotSeries = ML.xgb resp (fun i -> hotFactorsNotSeries) (Some obsFilterNotSeries) None learnRate 15 lambda gamma minChildWeight (fun i -> 7) 10000 4
+let xgNotSeries = ML.xgb resp None (fun i -> hotFactorsNotSeries) (Some obsFilterNotSeries) None learnRate 15 lambda gamma minChildWeight (fun i -> 7) 10000 4
 
 
 
