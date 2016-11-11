@@ -190,7 +190,7 @@ let getCsvLine (r : Rec) (stats : SeriesStats) (faultNotNaStart : (int*float32)[
                                                                                                        |> Array.min
                                                                     )
 
-    let faultFreeAll = let s = faultFree |> Seq.filter (fun x -> not <| Single.IsNaN(x)) in if s |> Seq.isEmpty then Single.NaN else s |> Seq.min
+    let faultFreeAll = let s = faultFree |> Seq.filter (fun x -> not <| Single.IsNaN(x)) in if s |> Seq.isEmpty then String.Empty else (s |> Seq.min).ToString()
             
     let part1 = sprintf "%f,%f,%f,%f,%f,%d,%d,%d,%d,%b,%b,%b,%s,%s" stats.StartDate stats.MinEndDate stats.MaxEndDate
                          stats.MinTime stats.MaxTime respSum stats.SeriesLen stats.SeriesTrainLen
@@ -198,7 +198,7 @@ let getCsvLine (r : Rec) (stats : SeriesStats) (faultNotNaStart : (int*float32)[
     let part2 = seq{0..stationCount - 1} |> Seq.map (fun i -> Set.contains i stats.StationIds) |> Seq.map (fun x -> x.ToString()) |> String.concat ","
     let part3 = faultFree|> Seq.map (fun x -> x.ToString()) |> String.concat ","
     let part4 = stationStartEndSame |> Array.map (fun x -> match x with | Some(v) -> v.ToString() | None -> String.Empty) |> String.concat ","
-    sprintf "%s,%s,%s,%s,%f,%b,%b" part1 part2 part3 part4 faultFreeAll inFaultPeriod inFaultPeriodPartial
+    sprintf "%s,%s,%s,%s,%s,%b,%b" part1 part2 part3 part4 faultFreeAll inFaultPeriod inFaultPeriodPartial
 
 
 let getFaultDates (trainNumPath : string) (trainDatePath : string) =
@@ -283,5 +283,5 @@ async
      do! DataImport.importCsvAsync testCatPath [|','|] [||] Int32.MaxValue 10000 0.1 true String.Empty CompressionLevel.NoCompression
      do! DataImport.importCsvAsync testMagicPath [|','|] [||] Int32.MaxValue 10000 0.0 true String.Empty CompressionLevel.NoCompression
      return ()
-    } |> Async.Start
+    } |> Async.RunSynchronously
 
